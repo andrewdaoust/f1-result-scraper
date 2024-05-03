@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/andrewdaoust/f1-result-scraper/parser"
+	"github.com/andrewdaoust/f1-result-scraper/result"
 )
 
 func main() {
@@ -32,20 +33,18 @@ func main() {
 		panic("Error getting qualifying results")
 	}
 
-	raceResults, err := parser.ParseSource(raceSource)
+	parsedRaceResults := parser.ParseSource(raceSource)
+	parsedQualResults := parser.ParseSource(qualSource)
+
+	raceResults, err := result.ParseResult(parsedRaceResults)
 	if err != nil {
 		panic("Error parsing race results")
 	}
-	qualResults, err := parser.ParseSource(qualSource)
+	qualResults, err := result.ParseResult(parsedQualResults)
 	if err != nil {
-		panic("Error parsing qualifying results")
+		panic("Error parsing race results")
 	}
 
 	fmt.Println("Qualifying:", qualResults)
 	fmt.Println("Race:", raceResults)
 }
-
-// https://blog.logrocket.com/making-http-requests-in-go/
-// https://www.formula1.com/en/results.html/2024/races/1229/bahrain/race-result.html
-// https://www.zenrows.com/blog/golang-html-parser#parse-html-with-the-node-parsing-api-recommended
-// https://pkg.go.dev/golang.org/x/net/html#Attribute
