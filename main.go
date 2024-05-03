@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/andrewdaoust/f1-result-scraper/parser"
 	// "github.com/andrewdaoust/f1-result-scraper/result"
@@ -57,6 +58,10 @@ func getSchedule(url string) parser.RaceWeekend {
 		panic("Error getting results source")
 	}
 
-	rw := parser.ParseScheduleSource(source)
+	urlSegments := strings.Split(url, "/")
+	location := strings.Replace(urlSegments[len(urlSegments)-1], ".html", "", -1)
+	year := urlSegments[len(urlSegments)-2]
+
+	rw := parser.ParseScheduleSource(source, location, year)
 	return rw
 }

@@ -1,13 +1,15 @@
 package parser
 
 import (
-	// "fmt"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
 type RaceWeekend struct {
+	Location string
+	RaceName string
+	Circuit string
 	FP1 bool
 	FP2 bool
 	FP3 bool
@@ -18,19 +20,31 @@ type RaceWeekend struct {
 }
 
 func NewRaceWeekend() RaceWeekend {
-	rw := RaceWeekend{false, false, false, false, false, false, false}
+	rw := RaceWeekend{"", "", "", false, false, false, false, false, false, false}
 	return rw
 }
 
-func ParseScheduleSource(n *html.Node) RaceWeekend {
+func ParseScheduleSource(n *html.Node, location, year string) RaceWeekend {
 	rw := NewRaceWeekend()
+	rw.Location = location
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Data == "div" {
 			for _, a := range n.Attr {
 				if a.Key == "class" && a.Val == "f1-race-hub--timetable-listings" {
 					parseSchedule(n, &rw)
-					return
+				}
+			}
+		} else if n.Data == "h2" {
+			for _, a := range n.Attr {
+				if a.Key == "class" && a.Val == "f1--s" {
+					parseRaceName(n, &rw, year)
+				}
+			}
+		} else if n.Data == "p" {
+			for _, a := range n.Attr {
+				if a.Key == "class" && a.Val == "f1-uppercase misc--tag no-margin" {
+					parseCircuit(n, &rw)
 				}
 			}
 		}
@@ -41,6 +55,7 @@ func ParseScheduleSource(n *html.Node) RaceWeekend {
 	}
 
 	f(n)
+	rw.RaceName = strings.Replace(rw.RaceName, year, "", 1)
 	return rw
 }
 
@@ -71,45 +86,36 @@ func parseSchedule(n *html.Node, rw *RaceWeekend) {
 	}
 }
 
-// func parseDataCell(n *html.Node, s *string) {
-// 	if n.Type == html.TextNode {
-// 		data := strings.Replace(n.Data, "\n", "", -1)
-// 		data = strings.Trim(data, " ")
+func parseRaceName(n *html.Node, rw *RaceWeekend, year string) {
+	if n.Type == html.TextNode {
+		name := cleanRaceName(n.Data, year)
+		// fmt.Println(name)
+		rw.RaceName = name
+		return
+	}
 
-// 		if data != "" {
-// 			*s += data + " "
-// 		}
-// 	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		parseRaceName(c, rw, year)
+	}
+}
 
-// 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-// 		parseDataCell(c, s)
-// 	}
-// }
+func cleanRaceName(name, year string) string {
+	newName := strings.ToUpper(name)
+	newName = strings.Replace(newName, "FORMULA 1", "", -1)
+	newName = strings.Replace(newName, year, "", 1)
+	newName = strings.Replace(newName, "  ", " ", -1)
+	newName = strings.TrimSpace(newName)
 
-// func parseRow(n *html.Node, r *string) {
-// 	if n.Type == html.ElementNode && n.Data == "td" {
-// 		cell := ""
-// 		parseDataCell(n, &cell)
-// 		cell = strings.Trim(cell, " ")
-// 		*r += "," + cell
-// 	}
+	return newName
+}
 
-// 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-// 		parseRow(c, r)
-// 	}
-// }
+func parseCircuit(n *html.Node, rw *RaceWeekend) {
+	if n.Type == html.TextNode {
+		rw.Circuit = n.Data
+		return
+	}
 
-// func parseTable(n *html.Node, rows *[]string) {
-// 	if n.Type == html.ElementNode && n.Data == "tr" {
-// 		row := ""
-// 		parseRow(n, &row)
-// 		row = strings.Trim(row, " ,")
-// 		if row != "" {
-// 			*rows = append(*rows, row)
-// 		}
-// 	}
-
-// 	for c := n.FirstChild; c != nil; c = c.NextSibling {
-// 		parseTable(c, rows)
-// 	}
-// }
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		parseCircuit(c, rw)
+	}
+}
