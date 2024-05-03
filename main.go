@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/andrewdaoust/f1-result-scraper/parser"
-	"github.com/andrewdaoust/f1-result-scraper/result"
+	// "github.com/andrewdaoust/f1-result-scraper/result"
 )
 
 func main() {
@@ -20,31 +20,43 @@ func main() {
 	raceURL := fmt.Sprintf("%v/race-result.html", urlStub)
 	qualURL := fmt.Sprintf("%v/qualifying.html", urlStub)
 
-	racePage := parser.ResultPage{URL: raceURL}
-	qualPage := parser.ResultPage{URL: qualURL}
+	getResult(raceURL)
+	getResult(qualURL)
 
-	raceSource, raceErr := racePage.GetSource()
-	if raceErr != nil {
-		panic("Error getting race results")
-	}
+	scheduleUrl := "https://www.formula1.com/en/racing/2024/Miami.html"
+	rw := getSchedule(scheduleUrl)
+	fmt.Println(rw)
 
-	qualSource, qualErr := qualPage.GetSource()
-	if qualErr != nil {
-		panic("Error getting qualifying results")
-	}
+	schedule2Url := "https://www.formula1.com/en/racing/2024/Japan.html"
+	rw2 := getSchedule(schedule2Url)
+	fmt.Println(rw2)
+}
 
-	parsedRaceResults := parser.ParseSource(raceSource)
-	parsedQualResults := parser.ParseSource(qualSource)
+func getResult(url string) {
+	page := parser.Page{URL: url}
 
-	raceResults, err := result.ParseResult(parsedRaceResults)
+	source, err := page.GetSource()
 	if err != nil {
-		panic("Error parsing race results")
-	}
-	qualResults, err := result.ParseResult(parsedQualResults)
-	if err != nil {
-		panic("Error parsing race results")
+		panic("Error getting results source")
 	}
 
-	fmt.Println("Qualifying:", qualResults)
-	fmt.Println("Race:", raceResults)
+	result, err := parser.ParseResultSource(source)
+	// result, err := result.ParseResult(parsedSource)
+	if err != nil {
+		panic("Error parsing results")
+	}
+
+	fmt.Println(result)
+}
+
+func getSchedule(url string) parser.RaceWeekend {
+	page := parser.Page{URL: url}
+
+	source, err := page.GetSource()
+	if err != nil {
+		panic("Error getting results source")
+	}
+
+	rw := parser.ParseScheduleSource(source)
+	return rw
 }
